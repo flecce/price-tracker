@@ -461,6 +461,10 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
 @keyframes fadeIn { from { opacity: 0; } }
 .modal { width: 100%; max-width: 400px; background: var(--surface); border-radius: 24px; padding: 22px 18px 16px; box-shadow: var(--shadow-lg); animation: viewIn 0.25s ease; margin-bottom: var(--safe-b); }
 .modal p { margin: 0 0 18px; font-size: 16px; font-weight: 600; text-align: center; }
+.modal-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; text-align: center; }
+.modal-body { margin-bottom: 18px; font-size: 15px; }
+.modal-body ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+.modal-body b { color: var(--accent-strong); }
 .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 600px) { .modal-backdrop { place-items: center; } }
 

@@ -66,16 +66,21 @@ export class GoogleBackend {
   get photosUrl() {
     return this._folder ? `https://drive.google.com/drive/folders/${this._folder}` : null;
   }
+  get dataFolderUrl() {
+    return this.dataFolderId ? `https://drive.google.com/drive/folders/${this.dataFolderId}` : null;
+  }
 
   /**
    * Drive layout (everything inside one folder):
-   *   Price Tracker/            ← appProperties.priceTracker = 'root'
-   *   ├── Price Tracker (Sheet) ← 'data'
-   *   └── Foto/                 ← 'photos'
-   * Files are found by appProperties, so renaming them in Drive is fine.
+   *   PriceTracker/             ← appProperties.priceTracker = 'root'
+   *   ├── Data/                 ← 'dataFolder'
+   *   │   └── Price Tracker     ← 'data' (Google Sheet)
+   *   └── Photos/               ← 'photos'
+   * Files are found by appProperties, so renaming/moving them in Drive is fine.
    */
   async _init() {
     this.rootId = await this._ensureFolder('root', CONFIG.FOLDER_NAME, null);
+    this.dataFolderId = await this._ensureFolder('dataFolder', CONFIG.DATA_FOLDER_NAME, this.rootId);
     const key = 'pt.sheetId.' + this.user.email;
     let id = ls.get(key);
     if (id) {
@@ -96,7 +101,7 @@ export class GoogleBackend {
       }
     }
     ls.set(key, id);
-    await this._moveInto(id, this.rootId);
+    await this._moveInto(id, this.dataFolderId);
     this._folder = await this._ensureFolder('photos', CONFIG.PHOTOS_FOLDER_NAME, this.rootId);
   }
 

@@ -1123,6 +1123,48 @@ function renderForm(mode, arg) {
 }
 
 // ─────────────────────────────────────────────────────────
+//  Install as app (PWA)
+// ─────────────────────────────────────────────────────────
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // keep it for our own button
+  installPrompt = e;
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  toast(t('install.done'), 'success');
+  if (state.view === 'settings') renderSettings();
+});
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+async function installApp() {
+  if (installPrompt) {
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') installPrompt = null;
+    return;
+  }
+  // No native prompt available (iOS Safari, Firefox, or already dismissed): explain how to do it by hand
+  infoDialog(t('install.button'), isIOS() ? t('install.iosSteps') : t('install.otherSteps'));
+}
+
+function infoDialog(title, html) {
+  const root = $('#modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3 class="modal-title">${esc(title)}</h3>
+        <div class="modal-body">${html}</div>
+        <button class="btn primary block" data-close>${t('common.ok')}</button>
+      </div>
+    </div>`;
+  const close = () => (root.innerHTML = '');
+  root.querySelector('.modal-backdrop').onclick = (e) => e.target === e.currentTarget && close();
+  root.querySelector('[data-close]').onclick = close;
+}
+
+// ─────────────────────────────────────────────────────────
 //  Settings
 // ─────────────────────────────────────────────────────────
 function renderSettings() {
@@ -1166,7 +1208,7 @@ function renderSettings() {
       }
       ${
         be.spreadsheetUrl
-          ? `<a class="set-row link" href="${esc(be.spreadsheetUrl)}" target="_blank" rel="noopener">${icon('sheet')}<span>${t('set.openSheet')}<small>${esc(CONFIG.SPREADSHEET_NAME)}</small></span>${icon('external', 'xs')}</a>`
+          ? `<a class="set-row link" href="${esc(be.spreadsheetUrl)}" target="_blank" rel="noopener">${icon('sheet')}<span>${t('set.openSheet')}<small>${esc(CONFIG.FOLDER_NAME)} / ${esc(CONFIG.DATA_FOLDER_NAME)} / ${esc(CONFIG.SPREADSHEET_NAME)}</small></span>${icon('external', 'xs')}</a>`
           : ''
       }
       ${
@@ -1216,6 +1258,15 @@ function renderSettings() {
       </label>
     </section>
 
+    <div class="section-title">${t('set.app')}</div>
+    <section class="card">
+      ${
+        isStandalone()
+          ? `<div class="set-row link">${icon('check')}<span>${t('install.installed')}<small>${t('install.installedHint')}</small></span></div>`
+          : `<button class="set-row link" id="install-btn">${icon('download')}<span>${t('install.button')}<small>${t('install.hint')}</small></span>${icon('chevronRight', 'xs')}</button>`
+      }
+    </section>
+
     <div class="section-title">${t('set.data')}</div>
     <section class="card">
       <button class="set-row link" id="sync-now">${icon('refresh')}<span>${t('set.sync')}</span></button>
@@ -1226,7 +1277,7 @@ function renderSettings() {
     </section>
 
     <button class="btn danger-ghost block" id="logout-btn">${icon('logout')}<span>${t('set.logout')}</span></button>
-    <p class="footer muted">Price Tracker v${CONFIG.VERSION}</p>`;
+    <p class="footer muted">Price Tracker v${CONFIG.VERSION} · build ${esc(CONFIG.BUILD)}</p>`;
 
   $$('[data-theme]', $('#view')).forEach(
     (b) =>
@@ -1264,6 +1315,7 @@ function renderSettings() {
     prefs.autoOcr = e.target.checked;
     savePrefs();
   };
+  $('#install-btn')?.addEventListener('click', installApp);
   $('#sync-now').onclick = async () => {
     await refreshData();
     toast(t('set.synced'), 'success');
@@ -1313,8 +1365,18 @@ async function boot() {
   renderLogin(cu ? { message: t('login.welcomeBack', { name: cu.name }) } : {});
 }
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
+  // A new release activated its service worker: reload to run the new code,
+  // but never in the middle of filling the add/edit form.
+  let hadController = !!navigator.serviceWorker.controller;
+  let pendingReload = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return void (hadController = true);
+    if (state.view === 'add' || state.view === 'edit') pendingReload = true;
+    else location.reload();
+  });
+  window.addEventListener('hashchange', () => pendingReload && location.reload());
 }
 
 boot();

@@ -20,3 +20,6 @@ npm-debug.log*
 
 # Logs
 *.log
+
+# Build output
+_site/

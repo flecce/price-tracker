@@ -13,7 +13,7 @@ Accesso con Google; tutti i dati finiscono in un **Google Sheet nel tuo Drive** 
 - Scheda prodotto: ultimo / min / max / media, grafico dell'andamento, confronto per negozio, storico (tocca una riga per modificarla o eliminarla)
 - Tema chiaro / scuro / sistema + 6 colori d'accento
 - Lingue: italiano, deutsch, english
-- Installabile come app (PWA)
+- Installabile come app (PWA): pulsante **Installa su questo dispositivo** in Impostazioni (su iPhone mostra i passaggi per Safari)
 
 ## Struttura su Google Drive
 
@@ -21,8 +21,9 @@ Al primo accesso l'app crea tutto dentro un'unica cartella:
 
 ```
 PriceTracker/
-├── Price Tracker Data   (Google Sheet con i dati)
-└── Photos/              (foto dei prodotti / cartellini)
+├── Data/
+│   └── Price Tracker   (Google Sheet con i dati)
+└── Photos/             (foto dei prodotti / cartellini)
 ```
 
 I file sono riconosciuti tramite una proprietà interna (non dal nome): puoi rinominarli o spostare la cartella senza problemi.
@@ -41,7 +42,7 @@ Puoi modificare il foglio a mano: l'app lo rilegge a ogni sincronizzazione. Non 
 ## Configurazione Google
 
 Già fatta: progetto Google Cloud **`price-tracker-513915`**, app OAuth in modalità *Testing*
-(solo gli utenti di test elencati in *Google Auth Platform → Audience* possono accedere), origini
+(possono accedere solo gli utenti di test: `lecce.fabiano@gmail.com`, `selene.nardin@gmail.com`), origini
 `https://lecce.dev` e `http://localhost:8080`. Il Client ID è in [`js/config.js`](js/config.js).
 
 Per aggiungere altre persone: *Google Auth Platform → Audience → Test users → Add users*.
@@ -75,6 +76,15 @@ Poi apri <http://localhost:8080>. (Aprire `index.html` con doppio clic non funzi
 ## Pubblicazione
 
 Versione online: **<https://lecce.dev/price-tracker/>** (GitHub Pages, branch `main`, cartella root).
+**Rilascio:** ogni push su `main` avvia il workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), che:
+
+1. esegue `node scripts/build.js` → copia il sito in `_site/` e aggiunge `?v=<hash del commit>` a CSS, JS (anche agli `import`) e manifest;
+2. dà al service worker una cache nuova per ogni versione (la vecchia viene cancellata);
+3. pubblica su GitHub Pages (impostazione *Source: GitHub Actions*).
+
+Così a ogni rilascio i browser riscaricano tutto; l'app aperta si ricarica da sola quando arriva una versione nuova
+(ma mai mentre stai compilando un prezzo). L'hash della build è visibile in fondo alle Impostazioni.
+
 È tutto statico: basta qualunque hosting **HTTPS** (la fotocamera richiede HTTPS), ad esempio GitHub Pages, Netlify o Cloudflare Pages.
 Ricordati di aggiungere l'URL finale alle *Origini JavaScript autorizzate* del Client ID.
 

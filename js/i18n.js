@@ -135,6 +135,15 @@ const D = {
     'set.openFolder': 'Apri la cartella su Drive',
     'set.openPhotos': 'Apri la cartella delle foto',
     'set.driveLoading': 'Preparo la cartella su Drive…',
+    'common.ok': "OK",
+    'set.app': "App",
+    'install.button': "Installa su questo dispositivo",
+    'install.hint': "Aggiungi l'app alla schermata Home",
+    'install.installed': "App installata",
+    'install.installedHint': "Stai usando la versione installata",
+    'install.done': "App installata!",
+    'install.iosSteps': "<ol><li>Apri questa pagina in <b>Safari</b></li><li>Tocca il pulsante <b>Condividi</b> (il quadrato con la freccia in su)</li><li>Scegli <b>Aggiungi alla schermata Home</b> e conferma con <b>Aggiungi</b></li></ol>",
+    'install.otherSteps': "<ol><li>Apri il menu del browser (<b>⋮</b> o <b>…</b>)</li><li>Scegli <b>Installa app</b> o <b>Aggiungi a schermata Home</b></li><li>Conferma: l'icona apparirà tra le tue app</li></ol>",
   },
 
   de: {
@@ -271,6 +280,15 @@ const D = {
     'set.openFolder': 'Ordner in Drive öffnen',
     'set.openPhotos': 'Fotoordner öffnen',
     'set.driveLoading': 'Drive-Ordner wird vorbereitet…',
+    'common.ok': "OK",
+    'set.app': "App",
+    'install.button': "Auf diesem Gerät installieren",
+    'install.hint': "App zum Startbildschirm hinzufügen",
+    'install.installed': "App installiert",
+    'install.installedHint': "Du nutzt die installierte Version",
+    'install.done': "App installiert!",
+    'install.iosSteps': "<ol><li>Öffne diese Seite in <b>Safari</b></li><li>Tippe auf <b>Teilen</b> (Quadrat mit Pfeil nach oben)</li><li>Wähle <b>Zum Home-Bildschirm</b> und bestätige mit <b>Hinzufügen</b></li></ol>",
+    'install.otherSteps': "<ol><li>Öffne das Browsermenü (<b>⋮</b> oder <b>…</b>)</li><li>Wähle <b>App installieren</b> oder <b>Zum Startbildschirm hinzufügen</b></li><li>Bestätigen: das Symbol erscheint bei deinen Apps</li></ol>",
   },
 
   en: {
@@ -407,6 +425,15 @@ const D = {
     'set.openFolder': 'Open the Drive folder',
     'set.openPhotos': 'Open the photos folder',
     'set.driveLoading': 'Preparing the Drive folder…',
+    'common.ok': "OK",
+    'set.app': "App",
+    'install.button': "Install on this device",
+    'install.hint': "Add the app to your home screen",
+    'install.installed': "App installed",
+    'install.installedHint': "You're using the installed version",
+    'install.done': "App installed!",
+    'install.iosSteps': "<ol><li>Open this page in <b>Safari</b></li><li>Tap the <b>Share</b> button (square with an up arrow)</li><li>Choose <b>Add to Home Screen</b> and confirm with <b>Add</b></li></ol>",
+    'install.otherSteps': "<ol><li>Open the browser menu (<b>⋮</b> or <b>…</b>)</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b></li><li>Confirm: the icon will appear with your apps</li></ol>",
   },
 };
 
