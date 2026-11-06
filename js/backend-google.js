@@ -60,8 +60,22 @@ export class GoogleBackend {
   get spreadsheetUrl() {
     return this.id ? `https://docs.google.com/spreadsheets/d/${this.id}/edit` : null;
   }
+  get folderUrl() {
+    return this.rootId ? `https://drive.google.com/drive/folders/${this.rootId}` : null;
+  }
+  get photosUrl() {
+    return this._folder ? `https://drive.google.com/drive/folders/${this._folder}` : null;
+  }
 
+  /**
+   * Drive layout (everything inside one folder):
+   *   Price Tracker/            ← appProperties.priceTracker = 'root'
+   *   ├── Price Tracker (Sheet) ← 'data'
+   *   └── Foto/                 ← 'photos'
+   * Files are found by appProperties, so renaming them in Drive is fine.
+   */
   async _init() {
+    this.rootId = await this._ensureFolder('root', CONFIG.FOLDER_NAME, null);
     const key = 'pt.sheetId.' + this.user.email;
     let id = ls.get(key);
     if (id) {
@@ -73,16 +87,51 @@ export class GoogleBackend {
       }
     }
     if (!id) {
-      const q = enc(`appProperties has { key='${APP_PROP}' and value='data' } and trashed=false`);
-      const r = await api(`${DRIVE}/files?q=${q}&fields=files(id,name)&orderBy=createdTime`);
-      if (r.files?.length) {
-        id = r.files[0].id;
+      const f = await this._findByTag('data');
+      if (f) {
+        id = f.id;
         await this._loadMeta(id);
       } else {
         id = await this._create();
       }
     }
     ls.set(key, id);
+    await this._moveInto(id, this.rootId);
+    this._folder = await this._ensureFolder('photos', CONFIG.PHOTOS_FOLDER_NAME, this.rootId);
+  }
+
+  async _findByTag(tag, extra = '') {
+    const q = enc(`appProperties has { key='${APP_PROP}' and value='${tag}' } and trashed=false${extra}`);
+    const r = await api(`${DRIVE}/files?q=${q}&fields=files(id,parents)&orderBy=createdTime`);
+    return r.files?.[0] || null;
+  }
+
+  /** Make sure `fileId` lives inside `folderId` (moves it if needed). */
+  async _moveInto(fileId, folderId, parents) {
+    if (!parents) parents = (await api(`${DRIVE}/files/${fileId}?fields=parents`)).parents || [];
+    if (parents.includes(folderId)) return;
+    await api(
+      `${DRIVE}/files/${fileId}?addParents=${folderId}${parents.length ? `&removeParents=${parents.join(',')}` : ''}&fields=id`,
+      { method: 'PATCH', body: '{}' }
+    );
+  }
+
+  async _ensureFolder(tag, name, parentId) {
+    const found = await this._findByTag(tag, ` and mimeType='application/vnd.google-apps.folder'`);
+    if (found) {
+      if (parentId) await this._moveInto(found.id, parentId, found.parents || []);
+      return found.id;
+    }
+    const f = await api(`${DRIVE}/files?fields=id`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        mimeType: 'application/vnd.google-apps.folder',
+        appProperties: { [APP_PROP]: tag },
+        ...(parentId ? { parents: [parentId] } : {}),
+      }),
+    });
+    return f.id;
   }
 
   async _loadMeta(id) {
@@ -205,21 +254,8 @@ export class GoogleBackend {
 
   // ── Photos (Drive) ───────────────────────────────────
   async _folderId() {
-    if (this._folder) return this._folder;
-    const q = enc(
-      `mimeType='application/vnd.google-apps.folder' and appProperties has { key='${APP_PROP}' and value='photos' } and trashed=false`
-    );
-    const r = await api(`${DRIVE}/files?q=${q}&fields=files(id)`);
-    if (r.files?.length) return (this._folder = r.files[0].id);
-    const f = await api(`${DRIVE}/files?fields=id`, {
-      method: 'POST',
-      body: JSON.stringify({
-        name: CONFIG.PHOTOS_FOLDER_NAME,
-        mimeType: 'application/vnd.google-apps.folder',
-        appProperties: { [APP_PROP]: 'photos' },
-      }),
-    });
-    return (this._folder = f.id);
+    if (!this._folder) this._folder = await this._ensureFolder('photos', CONFIG.PHOTOS_FOLDER_NAME, this.rootId);
+    return this._folder;
   }
 
   async uploadPhoto(blob, name) {

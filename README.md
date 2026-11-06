@@ -15,19 +15,38 @@ Accesso con Google; tutti i dati finiscono in un **Google Sheet nel tuo Drive** 
 - Lingue: italiano, deutsch, english
 - Installabile come app (PWA)
 
-## Struttura del Google Sheet
+## Struttura su Google Drive
 
-Al primo accesso viene creato lo spreadsheet **Price Tracker** con due fogli:
+Al primo accesso l'app crea tutto dentro un'unica cartella:
+
+```
+PriceTracker/
+├── Price Tracker Data   (Google Sheet con i dati)
+└── Photos/              (foto dei prodotti / cartellini)
+```
+
+I file sono riconosciuti tramite una proprietà interna (non dal nome): puoi rinominarli o spostare la cartella senza problemi.
+Da **Impostazioni → Google Drive** ci sono i link diretti a cartella, foglio e foto.
+
+Lo spreadsheet ha due fogli:
 
 | Foglio   | Colonne |
 |----------|---------|
 | `Prices` | ID, Date (ISO), Barcode, Product, Brand, Price, Currency, Store, Notes, Photo ID, Thumbnail |
 | `Stores` | Name, Created |
 
-Le foto originali (ridimensionate a 1600 px) vanno nella cartella Drive **Price Tracker – Foto**; nel foglio resta una miniatura piccola per la lista.
+Le foto originali (ridimensionate a 1600 px) vanno in **PriceTracker/Photos**; nel foglio resta una miniatura piccola per la lista.
 Puoi modificare il foglio a mano: l'app lo rilegge a ogni sincronizzazione. Non rinominare i fogli né riordinare le colonne.
 
-## Configurazione Google (una volta sola, ~5 minuti)
+## Configurazione Google
+
+Già fatta: progetto Google Cloud **`price-tracker-513915`**, app OAuth in modalità *Testing*
+(solo gli utenti di test elencati in *Google Auth Platform → Audience* possono accedere), origini
+`https://lecce.dev` e `http://localhost:8080`. Il Client ID è in [`js/config.js`](js/config.js).
+
+Per aggiungere altre persone: *Google Auth Platform → Audience → Test users → Add users*.
+
+Per rifarla da zero su un altro progetto:
 
 1. Vai su <https://console.cloud.google.com/> e crea un progetto (es. "Price Tracker").
 2. **API e servizi → Libreria**: abilita **Google Sheets API** e **Google Drive API**.
@@ -45,9 +64,6 @@ Puoi modificare il foglio a mano: l'app lo rilegge a ogni sincronizzazione. Non 
    GOOGLE_CLIENT_ID: '1234567890-xxxx.apps.googleusercontent.com',
    ```
 
-> Senza Client ID la schermata di login mostra il pulsante **Prova la demo**, che salva i dati solo nel browser.
-> La demo si può aprire anche con `?demo` nell'URL.
-
 ## Avvio in locale
 
 ```bash
@@ -59,8 +75,6 @@ Poi apri <http://localhost:8080>. (Aprire `index.html` con doppio clic non funzi
 ## Pubblicazione
 
 Versione online: **<https://lecce.dev/price-tracker/>** (GitHub Pages, branch `main`, cartella root).
-Per il login Google aggiungi `https://lecce.dev` alle *Origini JavaScript autorizzate* del Client ID.
-
 È tutto statico: basta qualunque hosting **HTTPS** (la fotocamera richiede HTTPS), ad esempio GitHub Pages, Netlify o Cloudflare Pages.
 Ricordati di aggiungere l'URL finale alle *Origini JavaScript autorizzate* del Client ID.
 
@@ -79,7 +93,6 @@ js/config.js          ← Client ID Google
 js/app.js             UI, routing, viste
 js/auth.js            login Google (Identity Services)
 js/backend-google.js  lettura/scrittura Sheets + foto su Drive
-js/backend-demo.js    backend locale per la demo
 js/media.js           scanner, OCR, immagini, Open Food Facts
 js/i18n.js            traduzioni IT / DE / EN
 sw.js                 service worker (PWA)

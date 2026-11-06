@@ -55,7 +55,8 @@ export async function init(clientId) {
   }
 }
 
-export const hasValidToken = () => !!token && Date.now() < expiresAt;
+export const tokenExpiresAt = () => expiresAt;
+export const hasValidToken =() => !!token && Date.now() < expiresAt;
 
 /** Opens the Google popup. Call it from a user gesture (click) when possible. */
 export function requestToken() {

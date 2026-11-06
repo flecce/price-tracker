@@ -2,7 +2,6 @@ import { CONFIG } from './config.js';
 import { t, setLang, getLang, detectLang, LANGS } from './i18n.js';
 import * as auth from './auth.js';
 import { GoogleBackend } from './backend-google.js';
-import { DemoBackend } from './backend-demo.js';
 import { scanBarcode, readPrices, resizeImage, thumbDataUrl, lookupBarcode } from './media.js';
 import { icon, LOGO, GOOGLE_G } from './icons.js';
 import { $, $$, esc, uid, normalize, parsePrice, debounce, ls, hashHue, toLocalInput } from './utils.js';
@@ -308,7 +307,6 @@ function renderLogin(opts = {}) {
             ? `<div class="notice">${t('login.notConfigured')}</div>`
             : `<button class="btn google block lg" id="login-btn">${GOOGLE_G}<span>${t('login.google')}</span></button>`
         }
-        ${notConfigured ? `<button class="btn ghost block" id="demo-btn">${t('login.demo')}</button>` : ''}
         ${langSwitch()}
       </div>
     </div>`;
@@ -324,7 +322,6 @@ function renderLogin(opts = {}) {
       renderLogin({ error: e?.type === 'scope' ? t('err.scope') : `${t('err.login')}: ${e?.message || e}` });
     }
   });
-  $('#demo-btn')?.addEventListener('click', startDemo);
   $$('[data-lang]').forEach(
     (b) =>
       (b.onclick = () => {
@@ -350,14 +347,6 @@ async function startGoogle() {
   } catch (e) {
     return handleError(e);
   }
-  refreshData();
-}
-
-function startDemo() {
-  ls.set('pt.demo', true);
-  state.user = { name: 'Demo', email: 'demo@local', picture: '' };
-  state.backend = new DemoBackend();
-  enterApp();
   refreshData();
 }
 
@@ -1138,6 +1127,7 @@ function renderForm(mode, arg) {
 // ─────────────────────────────────────────────────────────
 function renderSettings() {
   state.view = 'settings';
+  state.viewRefresh = renderSettings;
   setTopbar({ title: t('nav.settings'), back: true });
   const u = state.user;
   const be = state.backend;
@@ -1146,13 +1136,45 @@ function renderSettings() {
   const stores = storesByUse();
 
   $('#view').innerHTML = `
-    <section class="card account">
-      ${avatarHtml(u, 'lg')}
-      <div class="account-info">
-        <b>${esc(u.name)}</b>
-        <span class="muted">${esc(u.email)}</span>
-        ${be.kind === 'demo' ? `<span class="badge">${t('set.demoBadge')}</span>` : ''}
+    <div class="section-title">${t('set.account')}</div>
+    <section class="card">
+      <div class="account">
+        ${avatarHtml(u, 'lg')}
+        <div class="account-info">
+          <b>${esc(u.name)}</b>
+          <span class="muted">${esc(u.email)}</span>
+          <span class="badge">${GOOGLE_G}${t('set.connectedGoogle')}</span>
+        </div>
       </div>
+      <div class="account-meta">
+        <div><span>${t('set.session')}</span><b>${
+          auth.tokenExpiresAt() > Date.now()
+            ? t('set.sessionUntil', { time: fmtTime(auth.tokenExpiresAt()) })
+            : t('set.sessionExpired')
+        }</b></div>
+        <div><span>${t('set.records')}</span><b>${state.entries.length} · ${state.products.size} ${t('home.products')}</b></div>
+        <div><span>${t('set.lastSync')}</span><b>${state.lastSync ? fmtTime(state.lastSync) : '—'}</b></div>
+      </div>
+    </section>
+
+    <div class="section-title">${t('set.drive')}</div>
+    <section class="card">
+      ${
+        be.folderUrl
+          ? `<a class="set-row link" href="${esc(be.folderUrl)}" target="_blank" rel="noopener">${icon('folder')}<span>${t('set.openFolder')}<small>${esc(CONFIG.FOLDER_NAME)}</small></span>${icon('external', 'xs')}</a>`
+          : ''
+      }
+      ${
+        be.spreadsheetUrl
+          ? `<a class="set-row link" href="${esc(be.spreadsheetUrl)}" target="_blank" rel="noopener">${icon('sheet')}<span>${t('set.openSheet')}<small>${esc(CONFIG.SPREADSHEET_NAME)}</small></span>${icon('external', 'xs')}</a>`
+          : ''
+      }
+      ${
+        be.photosUrl
+          ? `<a class="set-row link" href="${esc(be.photosUrl)}" target="_blank" rel="noopener">${icon('image')}<span>${t('set.openPhotos')}<small>${esc(CONFIG.FOLDER_NAME)} / ${esc(CONFIG.PHOTOS_FOLDER_NAME)}</small></span>${icon('external', 'xs')}</a>`
+          : ''
+      }
+      ${!be.folderUrl ? `<div class="set-row"><span class="muted">${t('set.driveLoading')}</span><span class="spinner sm"></span></div>` : ''}
     </section>
 
     <div class="section-title">${t('set.appearance')}</div>
@@ -1196,7 +1218,6 @@ function renderSettings() {
 
     <div class="section-title">${t('set.data')}</div>
     <section class="card">
-      ${be.spreadsheetUrl ? `<a class="set-row link" href="${esc(be.spreadsheetUrl)}" target="_blank" rel="noopener">${icon('sheet')}<span>${t('set.openSheet')}</span>${icon('external', 'xs')}</a>` : ''}
       <button class="set-row link" id="sync-now">${icon('refresh')}<span>${t('set.sync')}</span></button>
       <div class="set-row col">
         <span class="set-label">${t('set.stores')} · ${stores.length}</span>
@@ -1204,7 +1225,7 @@ function renderSettings() {
       </div>
     </section>
 
-    <button class="btn danger-ghost block" id="logout-btn">${icon('logout')}<span>${be.kind === 'demo' ? t('set.exitDemo') : t('set.logout')}</span></button>
+    <button class="btn danger-ghost block" id="logout-btn">${icon('logout')}<span>${t('set.logout')}</span></button>
     <p class="footer muted">Price Tracker v${CONFIG.VERSION}</p>`;
 
   $$('[data-theme]', $('#view')).forEach(
@@ -1248,16 +1269,11 @@ function renderSettings() {
     toast(t('set.synced'), 'success');
   };
   $('#logout-btn').onclick = async () => {
-    if (!(await confirmDialog(be.kind === 'demo' ? t('set.exitDemoConfirm') : t('set.logoutConfirm')))) return;
-    if (be.kind === 'demo') {
-      ls.del('pt.demo');
-      DemoBackend.reset();
-    } else {
-      ls.del(cacheKey());
-      auth.signOut();
-    }
+    if (!(await confirmDialog(t('set.logoutConfirm')))) return;
+    ls.del(cacheKey());
+    auth.signOut();
     Object.assign(state, { user: null, backend: null, entries: [], stores: [], products: new Map(), navDepth: 0 });
-    history.replaceState(null, '', location.pathname + location.search.replace(/[?&]demo\b[^&]*/, ''));
+    history.replaceState({ i: 0 }, '', location.pathname);
     renderLogin();
   };
 }
@@ -1277,8 +1293,7 @@ async function boot() {
   setLang(prefs.lang);
   applyTheme();
 
-  const wantDemo = new URLSearchParams(location.search).has('demo') || ls.get('pt.demo');
-  if (wantDemo) return startDemo();
+  ls.del('pt.demo');
   if (!CONFIG.GOOGLE_CLIENT_ID) return renderLogin();
 
   app.innerHTML = `<div class="splash">${LOGO}<span class="spinner"></span></div>`;

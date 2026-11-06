@@ -1,5 +1,5 @@
 // Network-first service worker: always fresh when online, app shell available offline.
-const CACHE = 'pt-shell-v1';
+const CACHE = 'pt-shell-v2';
 const SHELL = [
   './',
   'index.html',
@@ -7,7 +7,6 @@ const SHELL = [
   'js/app.js',
   'js/auth.js',
   'js/backend-google.js',
-  'js/backend-demo.js',
   'js/config.js',
   'js/i18n.js',
   'js/icons.js',

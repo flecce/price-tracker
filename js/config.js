@@ -3,14 +3,17 @@
 // ─────────────────────────────────────────────────────────────
 export const CONFIG = {
   // OAuth 2.0 Client ID (tipo "Applicazione web") da Google Cloud Console.
-  // Esempio: '1234567890-abcdefg.apps.googleusercontent.com'
-  GOOGLE_CLIENT_ID: '',
+  // È un identificativo pubblico: può stare nel repository.
+  GOOGLE_CLIENT_ID: '197366066739-3tj8te00j13q23c340ohnu7iahg68ko6.apps.googleusercontent.com',
 
-  // Nome del Google Sheet creato nel tuo Drive al primo accesso
-  SPREADSHEET_NAME: 'Price Tracker',
+  // Tutto finisce in un'unica cartella nel tuo Drive:
+  //   Price Tracker/
+  //   ├── Price Tracker   (Google Sheet con i dati)
+  //   ├── Price Tracker Data (Google Sheet con i dati)
+  //   └── Photos/            (foto dei prodotti/cartellini)
+  FOLDER_NAME: 'PriceTracker',
+  SPREADSHEET_NAME: 'Price Tracker Data',
+  PHOTOS_FOLDER_NAME: 'Photos',
 
-  // Cartella Drive dove vengono salvate le foto
-  PHOTOS_FOLDER_NAME: 'Price Tracker – Foto',
-
-  VERSION: '1.0.0',
+  VERSION: '1.1.0',
 };
